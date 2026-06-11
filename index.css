@@ -420,13 +420,15 @@ input:checked + .slider:before {
 
 .main-buttons {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     gap: 12px;
     margin-top: 10px;
+    width: 100%;
+    max-width: 500px;
 }
 
 .main-buttons .btn {
-    width: 100%;
+    flex: 1;
     padding: 12px;
 }
 
