@@ -1,0 +1,730 @@
+/* M11S 星轨链模拟器 样式表 (第四版) */
+
+:root {
+    --bg-primary: #05010a;
+    --bg-surface: rgba(20, 11, 35, 0.65);
+    --border-glow: rgba(160, 32, 240, 0.4);
+    --border-glow-active: rgba(0, 255, 204, 0.7);
+    
+    --color-text: #e2d9f3;
+    --color-text-muted: #8c7ba6;
+    --color-primary: #a020f0;
+    --color-accent: #ff5500;  /* 橙色特效色 */
+    --color-boss-red: #ff3366; /* Boss 经典粉红 */
+    --color-player: #00ffcc;   /* 玩家青色 */
+    --color-safe: #00ff66;     /* 安全区绿色 */
+    --color-warning: #ffaa00;  /* 警告黄 */
+    
+    --font-primary: 'Noto Sans SC', sans-serif;
+    --font-title: 'Cinzel', serif;
+    --font-numbers: 'Orbitron', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--color-text);
+    font-family: var(--font-primary);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    background-image: 
+        radial-gradient(circle at 10% 20%, rgba(90, 20, 150, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(255, 85, 0, 0.08) 0%, transparent 45%);
+}
+
+/* 页面主要容器 */
+.app-container {
+    width: 100%;
+    max-width: 1200px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+header {
+    text-align: center;
+    border-bottom: 2px solid rgba(160, 32, 240, 0.2);
+    padding-bottom: 15px;
+}
+
+.ff-title {
+    font-family: var(--font-title);
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: 4px;
+    color: #fff;
+    text-shadow: 0 0 10px rgba(160, 32, 240, 0.8), 0 0 20px rgba(255, 85, 0, 0.4);
+}
+
+.subtitle {
+    font-size: 1.05rem;
+    color: var(--color-text-muted);
+    letter-spacing: 2px;
+    margin-top: 5px;
+    text-transform: uppercase;
+}
+
+/* 主内容布局 */
+.main-content {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 30px;
+    align-items: start;
+}
+
+@media (max-width: 900px) {
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 竞技场区域 */
+.arena-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background: var(--bg-surface);
+    border: 1px solid rgba(160, 32, 240, 0.3);
+    border-radius: 12px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 20px rgba(160, 32, 240, 0.15);
+}
+
+.arena-container {
+    width: 100%;
+    max-width: 500px;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
+    position: relative;
+}
+
+#arenaSvg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+/* 读条与状态指示栏样式 */
+.cast-bar-container {
+    width: 100%;
+    max-width: 500px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.cast-title {
+    font-size: 0.95rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+.cast-bar {
+    width: 100%;
+    height: 18px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #ffaa00;
+    box-shadow: 0 0 8px rgba(255, 170, 0, 0.3);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.cast-progress {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(90deg, #ff4400, #ffaa00);
+    box-shadow: 0 0 10px #ffaa00;
+}
+
+.cast-time {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-numbers);
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+}
+
+/* 状态遮罩与提示已合入上方读条栏 */
+
+/* 机制判定横幅 */
+.result-banner {
+    position: absolute;
+    top: 45%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    z-index: 15;
+    background: rgba(10, 0, 5, 0.88);
+    border: 2px solid var(--color-accent);
+    box-shadow: 0 0 30px var(--color-accent);
+    padding: 20px 40px;
+    border-radius: 8px;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.result-banner.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.result-title {
+    font-family: var(--font-title);
+    font-size: 2.2rem;
+    font-weight: bold;
+    color: var(--color-accent);
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px var(--color-accent);
+    margin-bottom: 5px;
+}
+
+.result-reason {
+    font-size: 1rem;
+    color: #fff;
+}
+
+/* 控制面板区域 */
+.control-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.panel-card {
+    background: var(--bg-surface);
+    border: 1px solid rgba(160, 32, 240, 0.25);
+    border-radius: 8px;
+    padding: 18px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.card-title {
+    font-family: var(--font-title);
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+    margin-bottom: 15px;
+    border-left: 3px solid var(--color-primary);
+    padding-left: 10px;
+    text-transform: uppercase;
+}
+
+/* 训练数据网格 */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+}
+
+.stat-item {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 10px 15px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+}
+
+.stat-value {
+    font-size: 1.4rem;
+    font-weight: bold;
+}
+
+/* 选项与设置 */
+.setting-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.form-select {
+    width: 100%;
+    background-color: rgba(10, 5, 20, 0.8);
+    border: 1px solid rgba(160, 32, 240, 0.4);
+    color: var(--color-text);
+    padding: 8px 12px;
+    border-radius: 4px;
+    outline: none;
+    font-family: var(--font-primary);
+}
+
+.form-select:focus {
+    border-color: var(--color-player);
+    box-shadow: 0 0 5px rgba(0, 255, 204, 0.3);
+}
+
+.switch-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.switch-row:last-child {
+    margin-bottom: 0;
+}
+
+.switch-label {
+    font-size: 0.9rem;
+    color: var(--color-text);
+}
+
+/* 开关滑块 */
+.switch-container {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 22px;
+    flex-shrink: 0;
+}
+
+.switch-container input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    transition: .3s;
+    border-radius: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: var(--color-text-muted);
+    transition: .3s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: rgba(160, 32, 240, 0.3);
+    border-color: var(--color-primary);
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+    background-color: var(--color-player);
+    box-shadow: 0 0 8px var(--color-player);
+}
+
+/* 按钮组与按钮控制 */
+.button-group {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+.btn {
+    flex: 1;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 15px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-primary);
+    text-align: center;
+}
+
+.btn-primary {
+    background: rgba(160, 32, 240, 0.15);
+    border: 1px solid rgba(160, 32, 240, 0.4);
+    color: var(--color-text);
+}
+
+.btn-primary:hover {
+    background: rgba(160, 32, 240, 0.3);
+    border-color: rgba(160, 32, 240, 0.8);
+}
+
+.btn-primary.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
+    box-shadow: 0 0 10px rgba(160, 32, 240, 0.6);
+}
+
+.btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: var(--color-text);
+}
+
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-action {
+    background: linear-gradient(135deg, var(--color-accent), #d43f00);
+    border: none;
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(255, 85, 0, 0.4);
+}
+
+.btn-action:hover {
+    filter: brightness(1.1);
+    box-shadow: 0 4px 20px rgba(255, 85, 0, 0.6);
+    transform: translateY(-1px);
+}
+
+.main-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.main-buttons .btn {
+    width: 100%;
+    padding: 12px;
+}
+
+/* 手动分步导航 */
+.step-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 15px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.step-indicator {
+    font-size: 0.9rem;
+    font-weight: bold;
+    color: #fff;
+}
+
+.btn-secondary:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* 底部教程与说明 */
+.instructions-section {
+    background: var(--bg-surface);
+    border: 1px solid rgba(160, 32, 240, 0.15);
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 10px;
+}
+
+.section-title {
+    font-family: var(--font-title);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: 12px;
+}
+
+.instructions-content {
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--color-text-muted);
+}
+
+.instructions-content ul, .instructions-content ol {
+    margin-left: 20px;
+    margin-top: 8px;
+    margin-bottom: 12px;
+}
+
+.instructions-content li {
+    margin-bottom: 6px;
+}
+
+.instructions-content strong {
+    color: #fff;
+}
+
+/* --- SVG 元素特效重构 --- */
+
+/* 点击层样式 */
+#clickableArena {
+    cursor: crosshair;
+    pointer-events: auto !important; 
+}
+
+/* 禁用其余一切遮挡层的事件穿透 */
+.grid-lines,
+.path-guide,
+.lasers-preview,
+.lasers-active,
+.boss-cleave,
+.boss-group,
+.portals,
+.player-marker {
+    pointer-events: none !important;
+}
+
+/* 细微的网格辅助线 */
+.grid-lines line, .grid-lines rect {
+    stroke: rgba(160, 32, 240, 0.18);
+    stroke-width: 1px;
+}
+
+/* 黑洞预兆白色发光实线 (参考图三) */
+.laser-line-preview {
+    stroke: #ffffff !important;
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-opacity: 0; 
+    filter: drop-shadow(0 0 3px #ffffff) drop-shadow(0 0 6px rgba(255, 255, 255, 0.8));
+    transition: stroke-opacity 0.2s ease;
+}
+
+/* 判定时的橙色半透明爆发双闪动画 (参考图二、图三) */
+@keyframes orangeHazardFlash {
+    0% { fill-opacity: 0.1; stroke-opacity: 0.2; }
+    15% { fill-opacity: 0.85; stroke-opacity: 1; }
+    30% { fill-opacity: 0.35; stroke-opacity: 0.5; }
+    45% { fill-opacity: 0.8; stroke-opacity: 0.95; }
+    100% { fill-opacity: 0; stroke-opacity: 0; }
+}
+
+/* 判定爆破时橙色激光闪烁 (宽度 90px，橙色半透明，带发光边缘) */
+.laser-active-bg {
+    fill: rgba(255, 102, 0, 0.45) !important;
+    stroke: #ff6600;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 8px rgba(255, 102, 0, 0.75));
+    animation: orangeHazardFlash 0.75s forwards cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+/* BOSS 兽焰连尾击：前后刀 90° 橙色爆发双闪 */
+.boss-cleave {
+    fill: rgba(255, 102, 0, 0.45) !important;
+    stroke: #ff6600;
+    stroke-width: 3.5px;
+    filter: drop-shadow(0 0 10px rgba(255, 85, 0, 0.85));
+    display: none;
+}
+
+.boss-cleave.active {
+    display: block;
+    animation: orangeHazardFlash 0.8s forwards cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+/* --- 判定失败死因指示器：橙色半透明危险区高亮，带有温柔的呼吸脉动动画 --- */
+.laser-failed-hazard {
+    fill: rgba(255, 70, 0, 0.4) !important;
+    stroke: #ff4400;
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 6px rgba(255, 70, 0, 0.65));
+    animation: pulseOrange 1.4s infinite alternate ease-in-out;
+}
+
+.boss-cleave-failed {
+    fill: rgba(255, 70, 0, 0.4) !important;
+    stroke: #ff4400;
+    stroke-width: 3.5px;
+    filter: drop-shadow(0 0 8px rgba(255, 70, 0, 0.75));
+    animation: pulseOrange 1.4s infinite alternate ease-in-out;
+}
+
+@keyframes pulseOrange {
+    0% { fill-opacity: 0.32; stroke-opacity: 0.7; }
+    100% { fill-opacity: 0.52; stroke-opacity: 1; }
+}
+
+/* FFXIV 经典目标圈线 */
+.boss-target-ring {
+    fill: none;
+    stroke: rgba(255, 51, 102, 0.45);
+    stroke-width: 3.5px;
+    stroke-dasharray: 412 59; 
+    transform: rotate(67.5deg); 
+    transform-origin: 250px 250px;
+}
+
+
+/* 玩家标记心跳 */
+.pulse-effect {
+    animation: markerPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes markerPulse {
+    0% { r: 9; fill-opacity: 0.9; }
+    50% { r: 13; fill-opacity: 0.5; stroke-opacity: 1; }
+    100% { r: 16; fill-opacity: 0; stroke-opacity: 0; }
+}
+
+/* 弹出模态框 */
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal-backdrop.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: #10061e;
+    border: 2px solid var(--color-primary);
+    box-shadow: 0 0 40px rgba(160, 32, 240, 0.4);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    padding: 30px;
+    text-align: center;
+    transform: translateY(-20px);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.modal-backdrop.show .modal-content {
+    transform: translateY(0);
+}
+
+.modal-body {
+    font-size: 1.05rem;
+    color: var(--color-text);
+    margin: 20px 0 25px 0;
+    line-height: 1.5;
+}
+
+/* 工具类 */
+.font-orbitron {
+    font-family: var(--font-numbers);
+}
+
+.text-success {
+    color: var(--color-safe) !important;
+    text-shadow: 0 0 5px rgba(0, 255, 102, 0.4);
+}
+
+.text-warning {
+    color: var(--color-warning) !important;
+    text-shadow: 0 0 5px rgba(255, 170, 0, 0.4);
+}
+
+.text-danger {
+    color: var(--color-accent) !important;
+    text-shadow: 0 0 5px rgba(255, 85, 0, 0.4);
+}
+
+/* 判定失败时安全区的黄色双闪提示特效 */
+.safe-zone-flash {
+    fill: #ffcc00;
+    fill-opacity: 0.45;
+    stroke: #ffaa00;
+    stroke-width: 2px;
+    filter: drop-shadow(0 0 6px rgba(255, 204, 0, 0.75));
+    pointer-events: none;
+    animation: safeZoneDoubleFlash 0.8s forwards cubic-bezier(0.1, 0.8, 0.3, 1);
+}
+
+@keyframes safeZoneDoubleFlash {
+    0% { fill-opacity: 0.1; stroke-opacity: 0.2; }
+    15% { fill-opacity: 0.65; stroke-opacity: 1; }
+    30% { fill-opacity: 0.25; stroke-opacity: 0.4; }
+    45% { fill-opacity: 0.6; stroke-opacity: 0.9; }
+    100% { fill-opacity: 0; stroke-opacity: 0; }
+}
+
+/* Buff 栏布局 */
+.buff-bar {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.buff-icon-wrapper {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.buff-icon {
+    width: 26px;
+    height: 26px;
+    object-fit: contain;
+}
+
+.buff-timer {
+    font-family: var(--font-numbers);
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: #ffffff;
+    text-shadow: 1px 1px 0px #000, -1px -1px 0px #000, 1px -1px 0px #000, -1px 1px 0px #000, 0px 2px 4px rgba(0,0,0,0.8);
+}
+
+

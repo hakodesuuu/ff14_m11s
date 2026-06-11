@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M11S 星轨链(Orbital Omen)机制模拟器 - FF14</title>
+    <link rel="stylesheet" href="index.css">
+    <!-- 引入炫酷的 Google 字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Orbitron:wght@400;600;800&family=Noto+Sans+SC:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 头部标题 -->
+        <header>
+            <h1 class="ff-title" style="font-size: 2.1rem;">我的星轨链爱物语果然有问题</h1>
+            <p class="subtitle">星轨链模拟器</p>
+        </header>
+
+        <main class="main-content">
+            <!-- 模拟器画布区域 -->
+            <div class="arena-wrapper">
+                <!-- BOSS 技能读条与状态提示栏 -->
+                <div class="cast-bar-container" id="castBarContainer">
+                    <div class="cast-title" id="castTitle">准备开始...</div>
+                    <div class="cast-bar">
+                        <div class="cast-progress" id="castProgress"></div>
+                        <span class="cast-time" id="castTime">5.0s</span>
+                    </div>
+                </div>
+
+                <!-- 机制判定反馈 -->
+                <div class="result-banner" id="resultBanner">
+                    <div class="result-title" id="resultTitle">DAMAGE DOWN</div>
+                    <div class="result-reason" id="resultReason">点击了错误的区域！</div>
+                </div>
+
+                <!-- 竞技场 SVG 容器 -->
+                <div class="arena-container">
+                    <svg id="arenaSvg" viewBox="0 0 500 500">
+                        <!-- 渐变与滤镜定义 -->
+                        <defs>
+                            <radialGradient id="portalGrad" cx="50%" cy="50%" r="50%">
+                                <stop offset="0%" stop-color="#a020f0" />
+                                <stop offset="40%" stop-color="#4b0082" />
+                                <stop offset="80%" stop-color="#000" />
+                                <stop offset="100%" stop-color="transparent" />
+                            </radialGradient>
+                            
+                            <!-- 橙色半透明渐变 -->
+                            <linearGradient id="laserGradH" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="rgba(255, 102, 0, 0.1)" />
+                                <stop offset="30%" stop-color="rgba(255, 102, 0, 0.45)" />
+                                <stop offset="70%" stop-color="rgba(255, 102, 0, 0.45)" />
+                                <stop offset="100%" stop-color="rgba(255, 102, 0, 0.1)" />
+                            </linearGradient>
+                            
+                            <linearGradient id="laserGradV" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="rgba(255, 102, 0, 0.1)" />
+                                <stop offset="30%" stop-color="rgba(255, 102, 0, 0.45)" />
+                                <stop offset="70%" stop-color="rgba(255, 102, 0, 0.45)" />
+                                <stop offset="100%" stop-color="rgba(255, 102, 0, 0.1)" />
+                            </linearGradient>
+                        </defs>
+
+                        <!-- 暗色背景填充 (外部边缘) -->
+                        <rect x="0" y="0" width="500" height="500" fill="#0c0716" />
+
+                        <!-- 固定底图 (缩放到 360x360 并居中，留出 70px 边缘渲染黑洞) -->
+                        <image href="background.png" x="70" y="70" width="360" height="360" />
+                        
+                        <!-- 场地网格辅助线 -->
+                        <g class="grid-lines" id="gridLinesGroup"></g>
+
+                        <!-- 最优路线指引层 -->
+                        <g class="path-guide" id="pathGuideGroup"></g>
+
+                        <!-- 激光危险区预览与生效效果层 -->
+                        <g class="lasers-preview" id="lasersPreviewGroup"></g>
+                        <g class="lasers-active" id="lasersActiveGroup"></g>
+
+                        <!-- BOSS 兽焰连尾击前后刀 90° 扇形区域 (范围扩展至画布边缘) -->
+                        <path class="boss-cleave" id="bossCleaveNorth" d="" />
+                        <path class="boss-cleave" id="bossCleaveSouth" d="" />
+
+                        <!-- BOSS 目标圈 (仅渲染半透明外侧轮廓线，以不遮挡底图 BOSS) -->
+                        <g class="boss-group" id="bossGroup" transform="translate(250, 250)">
+                            <!-- FFXIV 经典目标圈 -->
+                            <circle cx="0" cy="0" r="75" class="boss-target-ring" />
+                            <polygon points="0,-85 -12,-70 12,-70" fill="rgba(255, 51, 102, 0.85)" />
+                            <!-- 环中央核心 -->
+                            <circle cx="0" cy="0" r="10" fill="rgba(90, 20, 150, 0.4)" stroke="rgba(255, 51, 102, 0.6)" stroke-width="1.5" />
+                        </g>
+
+                        <!-- 传送门显示层 (显示在底图 70-430 范围外) -->
+                        <g class="portals" id="portalsGroup"></g>
+
+                        <!-- 玩家标记 -->
+                        <g class="player-marker" id="playerMarker" transform="translate(250, 250)" style="display: none;">
+                            <circle cx="0" cy="0" r="10" fill="#00ffcc" stroke="#ffffff" stroke-width="2" class="pulse-effect" />
+                            <circle cx="0" cy="0" r="3" fill="#000" />
+                            <text x="0" y="-14" text-anchor="middle" fill="#00ffcc" font-size="10" font-weight="bold" font-family="Noto Sans SC">您</text>
+                        </g>
+
+                        <!-- 整个竞技场的透明交互点击区域 (精确坐标捕获) -->
+                        <rect id="clickableArena" x="70" y="70" width="360" height="360" fill="transparent" cursor="crosshair" />
+                    </svg>
+                </div>
+                <!-- Buff / Debuff 状态栏 -->
+                <div class="buff-bar" id="buffBar"></div>
+            </div>
+
+            <!-- 控制面板 -->
+            <div class="control-panel">
+                <!-- 计分看板 -->
+                <div class="panel-card stats-card">
+                    <div class="card-title">训练数据</div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <span class="stat-label">当前波次</span>
+                            <span class="stat-value font-orbitron" id="currentWaveVal">0 / 4</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">连续成功</span>
+                            <span class="stat-value font-orbitron text-success" id="streakVal">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">历史最高</span>
+                            <span class="stat-value font-orbitron text-warning" id="maxStreakVal">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">通关次数</span>
+                            <span class="stat-value font-orbitron" id="totalClearsVal">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 模式切换 -->
+                <div class="panel-card mode-card">
+                    <div class="card-title">模式选择</div>
+                    <div class="button-group">
+                        <button class="btn btn-primary active" id="btnClickMode">点击模式</button>
+                        <button class="btn btn-primary" id="btnWasdMode">WASD移动模式</button>
+                    </div>
+
+                    <!-- 速度控制 -->
+                    <div class="setting-row" id="speedSettingRow">
+                        <label for="speedSelect">读条与判定速度:</label>
+                        <select id="speedSelect" class="form-select">
+                            <option value="easy">简单模式（1.0x）</option>
+                            <option value="normal" selected>正常模式（1.0x）</option>
+                            <option value="challenge">挑战模式（1.2x）</option>
+                        </select>
+                    </div>
+                </div>
+
+
+                <!-- 主控制键 -->
+                <div class="main-buttons">
+                    <button class="btn btn-action" id="btnStart">随机生成并开始</button>
+                    <button class="btn btn-secondary" id="btnReset">重置数据</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- 底部说明与规则介绍已隐藏 -->
+    </div>
+
+    <!-- 弹窗反馈 -->
+    <div class="modal-backdrop" id="modalBackdrop">
+        <div class="modal-content">
+            <h2 id="modalTitle" class="text-success">机制通过！</h2>
+            <div id="modalBody" class="modal-body">
+                恭喜你，完美完成了这一轮星轨链机制！
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-action" id="btnModalClose">再试一次</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
