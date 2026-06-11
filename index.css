@@ -855,4 +855,15 @@ input:checked + .slider:before {
     font-weight: bold;
 }
 
+/* 点击波纹指示器动画 */
+.ripple-effect {
+    animation: clickRipple 0.8s ease-out infinite;
+    transform-origin: 0px 0px;
+}
+
+@keyframes clickRipple {
+    0% { transform: scale(0.6); opacity: 0.8; }
+    100% { transform: scale(2.8); opacity: 0; }
+}
+
 

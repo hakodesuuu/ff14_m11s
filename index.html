@@ -89,6 +89,12 @@
                             <polygon points="0,-85 -12,-70 12,-70" fill="rgba(255, 51, 102, 0.85)" />
                         </g>
 
+                        <!-- 点击位置指示圈 (波纹信号) -->
+                        <g id="clickTargetGroup" transform="translate(0, 0)" style="display: none;">
+                            <circle cx="0" cy="0" r="8" fill="none" stroke="#00ffcc" stroke-width="1.5" />
+                            <circle cx="0" cy="0" r="8" fill="#00ffcc" fill-opacity="0.35" class="ripple-effect" />
+                        </g>
+
                         <!-- 传送门显示层 (显示在底图 70-430 范围外) -->
                         <g class="portals" id="portalsGroup"></g>
 

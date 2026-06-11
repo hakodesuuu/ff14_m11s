@@ -125,6 +125,7 @@ const state = {
     maxStreak: 0,
     totalClears: 0,
     showPath: true,
+    clickTarget: null,
     
     // 定时任务
     timer: null,
@@ -332,6 +333,21 @@ function updateBuffUI() {
     } else {
         buffBar.style.display = 'none';
         buffBar.innerHTML = '';
+    }
+}
+
+function showClickTargetRipple(x, y) {
+    const group = document.getElementById('clickTargetGroup');
+    if (group) {
+        group.setAttribute('transform', `translate(${x}, ${y})`);
+        group.style.display = 'block';
+    }
+}
+
+function hideClickTargetRipple() {
+    const group = document.getElementById('clickTargetGroup');
+    if (group) {
+        group.style.display = 'none';
     }
 }
 
@@ -647,6 +663,8 @@ function resetSimulator() {
     state.playerPos = null;
     state.phase = 'idle';
     state.isPlaying = false;
+    state.clickTarget = null;
+    hideClickTargetRipple();
     
     document.getElementById('portalsGroup').innerHTML = '';
     document.getElementById('lasersPreviewGroup').innerHTML = '';
@@ -667,6 +685,7 @@ function resetSimulator() {
     
     document.getElementById('resultBanner').classList.remove('show');
     document.getElementById('modalBackdrop').classList.remove('show');
+    document.getElementById('btnModalClose').textContent = '再试一次';
     document.getElementById('castBarContainer').style.opacity = '1';
     
     clearDamageDownBuff();
@@ -893,23 +912,8 @@ function handleArenaClick(x, y) {
     // WASD 移动模式下，禁用鼠标点击跑位
     if (state.mode === 'wasd') return;
 
-    const targetWave = state.currentWave + 1;
-
-    // 如果是在读条阶段（星轨链或等待或读条兽焰连尾击），任何点击区域都是安全的，不进行即时判定
-    if (state.phase === 'casting' || state.phase === 'casting_star_chain' || state.phase === 'waiting') {
-        state.playerPos = { x, y };
-        renderOverlayLayers();
-        return;
-    }
-
-    if (!evaluateDamage(x, y, targetWave)) {
-        state.playerPos = { x, y };
-        renderOverlayLayers();
-        return;
-    }
-
-    state.playerPos = { x, y };
-    renderOverlayLayers();
+    state.clickTarget = { x, y };
+    showClickTargetRipple(x, y);
 }
 
 // 判定失败：持久绘制致死波次的橙色半透明危险区域 (带呼吸变暗微动，参考图三)
@@ -1109,6 +1113,7 @@ function triggerVictory() {
             <p class="font-orbitron text-success" style="font-size: 1.5rem; margin-top: 10px;">当前连胜: ${state.streak} 🔥</p>
         `;
     }
+    document.getElementById('btnModalClose').textContent = '再链一次';
     backdrop.classList.add('show');
 }
 
@@ -1150,7 +1155,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('btnModalClose').addEventListener('click', () => {
         document.getElementById('modalBackdrop').classList.remove('show');
-        resetSimulator(); // 回到初始状态，玩家需要手动点击开始按钮
+        if (state.phase === 'victory') {
+            startNewRound(); // 胜利结算点击直接开始新的回合
+        } else {
+            resetSimulator();
+        }
+    });
+
+    // 点击弹窗背景（弹窗以外区域）直接返回初始状态
+    document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+        if (e.target === document.getElementById('modalBackdrop')) {
+            document.getElementById('modalBackdrop').classList.remove('show');
+            resetSimulator();
+        }
+    });
+
+    // 结算状态时（例如失败状态），点击其他页面空白区域直接返回初始状态
+    document.addEventListener('click', (e) => {
+        if (state.phase === 'failed') {
+            const isBtnStart = e.target.closest('#btnStart');
+            const isBtnReset = e.target.closest('#btnReset');
+            const isBtnMode = e.target.closest('#btnClickMode') || e.target.closest('#btnWasdMode') || e.target.closest('#speedSelect');
+            const isResultBanner = e.target.closest('#resultBanner');
+            if (!isBtnStart && !isBtnReset && !isBtnMode && !isResultBanner) {
+                resetSimulator();
+            }
+        }
     });
 
     // 绑定竞技场透明交互层的精确点击处理
@@ -1207,53 +1237,78 @@ window.addEventListener('keyup', (e) => {
 });
 
 let lastFrameTime = performance.now();
-function updateWASDMovement(timestamp) {
-    requestAnimationFrame(updateWASDMovement);
+function updatePlayerMovement(timestamp) {
+    requestAnimationFrame(updatePlayerMovement);
     
     const dt = (timestamp - lastFrameTime) / 1000;
     lastFrameTime = timestamp;
     
-    if (!state.isPlaying || state.mode !== 'wasd' || state.phase === 'failed' || state.phase === 'victory') {
+    if (!state.isPlaying || state.phase === 'failed' || state.phase === 'victory') {
         return;
     }
     
-    let moveX = 0;
-    let moveY = 0;
-    
-    if (keysPressed['KeyW'] || keysPressed['ArrowUp']) moveY -= 1;
-    if (keysPressed['KeyS'] || keysPressed['ArrowDown']) moveY += 1;
-    if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) moveX -= 1;
-    if (keysPressed['KeyD'] || keysPressed['ArrowRight']) moveX += 1;
-    
-    if (moveX !== 0 || moveY !== 0) {
-        if (moveX !== 0 && moveY !== 0) {
-            // 对角线移动速度归一化，防止斜着跑得更快
-            moveX *= 0.7071;
-            moveY *= 0.7071;
-        }
+    if (state.mode === 'wasd') {
+        let moveX = 0;
+        let moveY = 0;
         
-        const moveSpeed = 54; 
-        const dx = moveX * moveSpeed * dt;
-        const dy = moveY * moveSpeed * dt;
+        if (keysPressed['KeyW'] || keysPressed['ArrowUp']) moveY -= 1;
+        if (keysPressed['KeyS'] || keysPressed['ArrowDown']) moveY += 1;
+        if (keysPressed['KeyA'] || keysPressed['ArrowLeft']) moveX -= 1;
+        if (keysPressed['KeyD'] || keysPressed['ArrowRight']) moveX += 1;
         
-        if (state.playerPos) {
-            const newX = state.playerPos.x + dx;
-            const newY = state.playerPos.y + dy;
+        if (moveX !== 0 || moveY !== 0) {
+            if (moveX !== 0 && moveY !== 0) {
+                // 对角线移动速度归一化，防止斜着跑得更快
+                moveX *= 0.7071;
+                moveY *= 0.7071;
+            }
             
-            // 判定玩家圆心是否超出场地网格边缘 [70, 430]
-            if (newX < 70 || newX > 430 || newY < 70 || newY > 430) {
+            const moveSpeed = 54; 
+            const dx = moveX * moveSpeed * dt;
+            const dy = moveY * moveSpeed * dt;
+            
+            if (state.playerPos) {
+                const newX = state.playerPos.x + dx;
+                const newY = state.playerPos.y + dy;
+                
+                // 判定玩家圆心是否超出场地网格边缘 [70, 430]
+                if (newX < 70 || newX > 430 || newY < 70 || newY > 430) {
+                    state.playerPos.x = newX;
+                    state.playerPos.y = newY;
+                    renderOverlayLayers();
+                    triggerFailure('真是个脚滑的家伙！这把别传……！（咽气', true);
+                    return;
+                }
+                
                 state.playerPos.x = newX;
                 state.playerPos.y = newY;
                 renderOverlayLayers();
-                triggerFailure('真是个脚滑的家伙！这把别传……！（咽气', true);
-                return;
             }
+        }
+    } else if (state.mode === 'click') {
+        if (state.clickTarget && state.playerPos) {
+            const dx = state.clickTarget.x - state.playerPos.x;
+            const dy = state.clickTarget.y - state.playerPos.y;
+            const distance = Math.hypot(dx, dy);
             
-            state.playerPos.x = newX;
-            state.playerPos.y = newY;
-            renderOverlayLayers();
+            if (distance > 0.5) {
+                const moveSpeed = 54; // 6m/s = 54 SVG units/s
+                const step = moveSpeed * dt;
+                
+                if (step >= distance) {
+                    state.playerPos.x = state.clickTarget.x;
+                    state.playerPos.y = state.clickTarget.y;
+                    hideClickTargetRipple();
+                } else {
+                    state.playerPos.x += (dx / distance) * step;
+                    state.playerPos.y += (dy / distance) * step;
+                }
+                renderOverlayLayers();
+            } else {
+                hideClickTargetRipple();
+            }
         }
     }
 }
-requestAnimationFrame(updateWASDMovement);
+requestAnimationFrame(updatePlayerMovement);
 
