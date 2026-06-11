@@ -322,13 +322,15 @@ function updateBuffUI() {
     const buffBar = document.getElementById('buffBar');
     if (!buffBar) return;
     if (state.damageDownSeconds > 0) {
+        buffBar.style.display = 'flex';
         buffBar.innerHTML = `
-            <div class="buff-icon-wrapper">
+            <div class="buff-icon-wrapper active">
                 <img src="damage_down.png" alt="伤害降低" class="buff-icon" />
             </div>
-            <div class="buff-timer">${state.damageDownSeconds}</div>
+            <div class="buff-timer-text">${state.damageDownSeconds}</div>
         `;
     } else {
+        buffBar.style.display = 'none';
         buffBar.innerHTML = '';
     }
 }
@@ -426,17 +428,17 @@ function updateArenaVisuals(t) {
 
     // 无缩放的原始秒数可见时间区间
     const portalWindows = [
-        { start: 1.0, end: 7.5 },
-        { start: 2.5, end: 9.0 },
-        { start: 4.0, end: 10.5 },
-        { start: 5.5, end: 12.0 }
+        { start: 1.0, end: 9.0 },
+        { start: 2.5, end: 10.5 },
+        { start: 4.0, end: 12.0 },
+        { start: 5.5, end: 13.5 }
     ];
 
     const lineWindows = [
-        { start: 3.0, end: 7.5 },
-        { start: 4.5, end: 9.0 },
-        { start: 6.0, end: 10.5 },
-        { start: 7.5, end: 12.0 }
+        { start: 3.0, end: 9.0 },
+        { start: 4.5, end: 10.5 },
+        { start: 6.0, end: 12.0 },
+        { start: 7.5, end: 13.5 }
     ];
 
     for (let idx = 0; idx < 4; idx++) {
@@ -660,7 +662,7 @@ function resetSimulator() {
     cleaveS.setAttribute('d', '');
 
     document.getElementById('castProgress').style.width = '0%';
-    document.getElementById('castTime').textContent = '5.0s';
+    document.getElementById('castTime').textContent = '4.5s';
     document.getElementById('castTitle').textContent = '准备开始...';
     
     document.getElementById('resultBanner').classList.remove('show');
@@ -735,36 +737,36 @@ function startSimulationLoop() {
             document.getElementById('castProgress').style.width = `${progress}%`;
             document.getElementById('castTime').textContent = `${Math.max(0, 1.0 - t).toFixed(1)}s`;
             document.getElementById('castTitle').textContent = '星轨链';
-        } else if (t < 4.0) {
+        } else if (t < 4.5) {
             state.phase = 'waiting';
             castBar.style.opacity = '0';
-        } else if (t < 7.5) {
+        } else if (t < 9.0) {
             state.phase = 'casting';
             castBar.style.opacity = '1';
-            const progress = ((t - 4.0) / 3.5) * 100;
-            document.getElementById('castProgress').style.width = `${progress}%`;
-            document.getElementById('castTime').textContent = `${Math.max(0, 7.5 - t).toFixed(1)}s`;
-            document.getElementById('castTitle').textContent = '兽焰连尾击';
-        } else if (t < 9.0) {
-            state.phase = 'active';
-            castBar.style.opacity = (state.gameMode === 'easy') ? '1' : '0';
-            const progress = ((9.0 - t) / 1.5) * 100;
+            const progress = ((t - 4.5) / 4.5) * 100;
             document.getElementById('castProgress').style.width = `${progress}%`;
             document.getElementById('castTime').textContent = `${Math.max(0, 9.0 - t).toFixed(1)}s`;
-            document.getElementById('castTitle').textContent = `第 1 回合安全！请在判定前移动到第 2 回合安全区！`;
+            document.getElementById('castTitle').textContent = '兽焰连尾击';
         } else if (t < 10.5) {
             state.phase = 'active';
             castBar.style.opacity = (state.gameMode === 'easy') ? '1' : '0';
             const progress = ((10.5 - t) / 1.5) * 100;
             document.getElementById('castProgress').style.width = `${progress}%`;
             document.getElementById('castTime').textContent = `${Math.max(0, 10.5 - t).toFixed(1)}s`;
-            document.getElementById('castTitle').textContent = `第 2 回合安全！请在判定前移动到第 3 回合安全区！`;
+            document.getElementById('castTitle').textContent = `第 1 回合安全！请在判定前移动到第 2 回合安全区！`;
         } else if (t < 12.0) {
             state.phase = 'active';
             castBar.style.opacity = (state.gameMode === 'easy') ? '1' : '0';
             const progress = ((12.0 - t) / 1.5) * 100;
             document.getElementById('castProgress').style.width = `${progress}%`;
             document.getElementById('castTime').textContent = `${Math.max(0, 12.0 - t).toFixed(1)}s`;
+            document.getElementById('castTitle').textContent = `第 2 回合安全！请在判定前移动到第 3 回合安全区！`;
+        } else if (t < 13.5) {
+            state.phase = 'active';
+            castBar.style.opacity = (state.gameMode === 'easy') ? '1' : '0';
+            const progress = ((13.5 - t) / 1.5) * 100;
+            document.getElementById('castProgress').style.width = `${progress}%`;
+            document.getElementById('castTime').textContent = `${Math.max(0, 13.5 - t).toFixed(1)}s`;
             document.getElementById('castTitle').textContent = `第 3 回合安全！请在判定前移动到第 4 回合安全区！`;
         } else {
             state.phase = 'victory_pending';
@@ -809,7 +811,7 @@ function startSimulationLoop() {
         }
         
         // 4. 事件触发器：波次判定结算
-        if (t >= 7.5 && !state.triggeredEvents.wave1) {
+        if (t >= 9.0 && !state.triggeredEvents.wave1) {
             state.triggeredEvents.wave1 = true;
             state.currentWave = 1;
             
@@ -820,7 +822,7 @@ function startSimulationLoop() {
             sound.playDing();
             triggerFireEffect(1, true);
         }
-        if (t >= 9.0 && !state.triggeredEvents.wave2) {
+        if (t >= 10.5 && !state.triggeredEvents.wave2) {
             state.triggeredEvents.wave2 = true;
             state.currentWave = 2;
             
@@ -831,7 +833,7 @@ function startSimulationLoop() {
             sound.playDing();
             triggerFireEffect(2, false);
         }
-        if (t >= 10.5 && !state.triggeredEvents.wave3) {
+        if (t >= 12.0 && !state.triggeredEvents.wave3) {
             state.triggeredEvents.wave3 = true;
             state.currentWave = 3;
             
@@ -842,7 +844,7 @@ function startSimulationLoop() {
             sound.playDing();
             triggerFireEffect(3, false);
         }
-        if (t >= 12.0 && !state.triggeredEvents.wave4) {
+        if (t >= 13.5 && !state.triggeredEvents.wave4) {
             state.triggeredEvents.wave4 = true;
             state.currentWave = 4;
             
@@ -855,7 +857,7 @@ function startSimulationLoop() {
         }
         
         // 5. 胜利结算
-        if (t >= 12.6 && !state.triggeredEvents.victory) {
+        if (t >= 14.1 && !state.triggeredEvents.victory) {
             state.triggeredEvents.victory = true;
             triggerVictory();
         }

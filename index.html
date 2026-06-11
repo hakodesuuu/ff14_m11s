@@ -24,7 +24,7 @@
                     <div class="cast-title" id="castTitle">准备开始...</div>
                     <div class="cast-bar">
                         <div class="cast-progress" id="castProgress"></div>
-                        <span class="cast-time" id="castTime">5.0s</span>
+                        <span class="cast-time" id="castTime">4.5s</span>
                     </div>
                 </div>
 
@@ -66,7 +66,7 @@
                         <rect x="0" y="0" width="500" height="500" fill="#0c0716" />
 
                         <!-- 固定底图 (缩放到 360x360 并居中，留出 70px 边缘渲染黑洞) -->
-                        <image href="background.png" x="70" y="70" width="360" height="360" />
+                        <image href="background.jpg" x="70" y="70" width="360" height="360" />
                         
                         <!-- 场地网格辅助线 -->
                         <g class="grid-lines" id="gridLinesGroup"></g>
@@ -87,8 +87,6 @@
                             <!-- FFXIV 经典目标圈 -->
                             <circle cx="0" cy="0" r="75" class="boss-target-ring" />
                             <polygon points="0,-85 -12,-70 12,-70" fill="rgba(255, 51, 102, 0.85)" />
-                            <!-- 环中央核心 -->
-                            <circle cx="0" cy="0" r="10" fill="rgba(90, 20, 150, 0.4)" stroke="rgba(255, 51, 102, 0.6)" stroke-width="1.5" />
                         </g>
 
                         <!-- 传送门显示层 (显示在底图 70-430 范围外) -->
@@ -104,65 +102,67 @@
                         <!-- 整个竞技场的透明交互点击区域 (精确坐标捕获) -->
                         <rect id="clickableArena" x="70" y="70" width="360" height="360" fill="transparent" cursor="crosshair" />
                     </svg>
+                    <!-- Buff / Debuff 状态栏 (绝对定位在竞技场左上角，默认完全隐藏) -->
+                    <div class="buff-bar" id="buffBar" style="display: none;"></div>
                 </div>
-                <!-- Buff / Debuff 状态栏 -->
-                <div class="buff-bar" id="buffBar"></div>
                 
                 <!-- 主控制键 -->
                 <div class="main-buttons">
-                    <button class="btn btn-action" id="btnStart">随机生成并开始</button>
+                    <button class="btn btn-action" id="btnStart">战斗开始</button>
                     <button class="btn btn-secondary" id="btnReset">重置数据</button>
                 </div>
             </div>
 
             <!-- 控制面板 -->
             <div class="control-panel">
-                <!-- 计分看板 -->
-                <div class="panel-card stats-card">
-                    <div class="card-title">训练数据</div>
-                    <div class="stats-grid">
-                        <div class="stat-item">
-                            <span class="stat-label">当前波次</span>
-                            <span class="stat-value font-orbitron" id="currentWaveVal">0 / 4</span>
+                <!-- 合并后的控制卡片 -->
+                <div class="panel-card compact-card">
+                    <div class="card-title">难度选择</div>
+                    
+                    <!-- 模式与速度设置 -->
+                    <div class="compact-settings">
+                        <div class="compact-setting-row vertical">
+                            <span class="compact-setting-label">操作模式</span>
+                            <div class="button-group button-group-compact">
+                                <button class="btn btn-primary btn-sm active" id="btnClickMode">点击</button>
+                                <button class="btn btn-primary btn-sm" id="btnWasdMode">WASD</button>
+                            </div>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">连续成功</span>
-                            <span class="stat-value font-orbitron text-success" id="streakVal">0</span>
+                        <div class="compact-setting-row vertical">
+                            <label for="speedSelect" class="compact-setting-label">难度选择</label>
+                            <select id="speedSelect" class="form-select form-select-sm">
+                                <option value="easy">简单 (1.0x)</option>
+                                <option value="normal" selected>正常 (1.0x)</option>
+                                <option value="challenge">挑战 (1.2x)</option>
+                            </select>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">历史最高</span>
-                            <span class="stat-value font-orbitron text-warning" id="maxStreakVal">0</span>
+                    </div>
+
+                    <div class="compact-divider"></div>
+
+                    <!-- 训练数据看板 -->
+                    <div class="compact-section-title">训练数据</div>
+                    <div class="stats-grid-compact">
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">当前波次</span>
+                            <span class="stat-value-compact font-orbitron" id="currentWaveVal">0 / 4</span>
                         </div>
-                        <div class="stat-item">
-                            <span class="stat-label">通关次数</span>
-                            <span class="stat-value font-orbitron" id="totalClearsVal">0</span>
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">连续成功</span>
+                            <span class="stat-value-compact font-orbitron text-success" id="streakVal">0</span>
+                        </div>
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">历史最高</span>
+                            <span class="stat-value-compact font-orbitron text-warning" id="maxStreakVal">0</span>
+                        </div>
+                        <div class="stat-item-compact">
+                            <span class="stat-label-compact">通关次数</span>
+                            <span class="stat-value-compact font-orbitron" id="totalClearsVal">0</span>
                         </div>
                     </div>
                 </div>
-
-                <!-- 模式切换 -->
-                <div class="panel-card mode-card">
-                    <div class="card-title">模式选择</div>
-                    <div class="button-group">
-                        <button class="btn btn-primary active" id="btnClickMode">点击模式</button>
-                        <button class="btn btn-primary" id="btnWasdMode">WASD移动模式</button>
-                    </div>
-
-                    <!-- 速度控制 -->
-                    <div class="setting-row" id="speedSettingRow">
-                        <label for="speedSelect">读条与判定速度:</label>
-                        <select id="speedSelect" class="form-select">
-                            <option value="easy">简单模式（1.0x）</option>
-                            <option value="normal" selected>正常模式（1.0x）</option>
-                            <option value="challenge">挑战模式（1.2x）</option>
-                        </select>
-                    </div>
-                </div>
-
             </div>
         </main>
-
-        <!-- 底部说明与规则介绍已隐藏 -->
     </div>
 
     <!-- 弹窗反馈 -->
