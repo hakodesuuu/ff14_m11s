@@ -114,7 +114,7 @@ header {
     overflow: hidden;
     box-shadow: 0 0 25px rgba(0, 0, 0, 0.6);
     position: relative;
-    margin: 32px 0; /* 加大上下边距，使游戏区域与顶部读条进度条、底部按钮隔开更合适距离，防止移动端前后刀导致偏移 */
+    margin: 64px 0 32px 0; /* 加大上方边距以拉开与顶部进度条及文字区的距离（多出约两行字符宽度），下方保留 32px，防止移动端前后刀偏移 */
     transform: translate3d(0, 0, 0); /* 启用3D硬件加速，防止劈刀大图层动画重新渲染时引发整个页面文档流微小重排与抖动 */
     will-change: transform;
 }
@@ -142,6 +142,9 @@ header {
     color: #fff;
     text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
     letter-spacing: 1px;
+    line-height: 1.4;
+    min-height: 2.8em; /* 预留两行字高度，防止文本行数变动时挤压进度条和整体界面 */
+    margin-bottom: 12px; /* 与进度条拉开距离 */
 }
 
 .cast-bar {
